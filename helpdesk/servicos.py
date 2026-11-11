@@ -1,4 +1,5 @@
-from helpdesk.enums import Permissao
+from helpdesk.chamados import Chamado
+from helpdesk.enums import Categoria, Permissao, Prioridade, StatusChamado
 from helpdesk.excecoes import (
     EmailEmUsoError,
     PermissaoNegadaError,
@@ -15,6 +16,8 @@ class HelpDesk:
             raise ValueError("O sistema precisa começar com um administrador.")
         self.__nome_empresa = nome_empresa
         self.__usuarios = [admin_inicial]
+        self.__chamados = []
+        self.__proximo_id_chamado = 1
 
     @property
     def nome_empresa(self) -> str:
@@ -56,6 +59,36 @@ class HelpDesk:
                     return usuario
                 return None
         return None
+
+    def abrir_chamado(self, solicitante: UsuarioComum, titulo: str, descricao: str,
+                      categoria: Categoria, prioridade: Prioridade) -> Chamado:
+        self.__verificar_permissao(solicitante, Permissao.ABRIR_CHAMADO)
+        chamado = Chamado(
+            self.__proximo_id_chamado, titulo, descricao, categoria, prioridade, solicitante
+        )
+        self.__chamados.append(chamado)
+        solicitante.adicionar_chamado(chamado)
+        self.__proximo_id_chamado += 1
+        return chamado
+
+    def listar_chamados(self, usuario: Usuario) -> list[Chamado]:
+        permissao = Permissao.CONSULTAR_PROPRIOS_CHAMADOS
+        if usuario.possui_permissao(Permissao.CONSULTAR_TODOS_CHAMADOS):
+            permissao = Permissao.CONSULTAR_TODOS_CHAMADOS
+        self.__verificar_permissao(usuario, permissao)
+
+        chamados = []
+        for chamado in self.__chamados:
+            if usuario.pode_visualizar(chamado):
+                chamados.append(chamado)
+        return chamados
+
+    def listar_fila(self) -> list[Chamado]:
+        fila = []
+        for chamado in self.__chamados:
+            if chamado.status == StatusChamado.ABERTO:
+                fila.append(chamado)
+        return fila
 
     def listar_tecnicos(self) -> list[Tecnico]:
         tecnicos = []
