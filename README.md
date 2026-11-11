@@ -26,7 +26,7 @@ Trabalho do III Trimestre — Tema: *Sistema de Hierarquia de Usuários (Help De
 | 3 | Interface gráfica com Tkinter | 20/11/2026 | Planejada |
 | — | Apresentações (8 a 10 minutos por grupo) | 20/11 a 27/11/2026 | Planejada |
 
-> Este commit inicial documenta o projeto a partir dos artefatos da Parte 1. As seções que descrevem a estrutura de código, a execução e os testes representam o **planejamento da Parte 2** e serão atualizadas conforme a implementação avançar.
+> A Parte 2 está em andamento. Já foram implementados a base do pacote (enumerações e exceções), a hierarquia de usuários e a parte de usuários da classe `HelpDesk`. As seções de chamados, estoque, execução e testes ainda serão atualizadas conforme a implementação avançar.
 
 ## Sumário
 
@@ -152,6 +152,7 @@ As demais ligações (*solicita*, *atende*, *autor*, *responsável* e *referenci
 | *Getters* e *setters* (omitidos do diagrama) | `@property` e `@<atributo>.setter`, com validação |
 | Enumerações | `enum.Enum` |
 | Dicas de tipo (`list[Chamado]`, `Tecnico \| None`) | *Type hints* nativos (Python 3.10 ou superior) |
+| Associação com classes de outros módulos (`chamado: Chamado`) | Parâmetro sem dica de tipo, para evitar importação circular entre `usuarios.py` e `chamados.py` |
 | Violação de regra de negócio | Exceções próprias, definidas em `excecoes.py` |
 | Hash de senha (`gerar_hash`) | Módulo `hashlib` da biblioteca padrão |
 
@@ -163,10 +164,21 @@ O projeto utiliza **somente Python e a biblioteca padrão**, sem dependências e
 |---------|------------------|
 | `helpdesk/enums.py` | Enumerações do domínio (`StatusChamado`, `Prioridade`, `Permissao` etc.). |
 | `helpdesk/excecoes.py` | Exceções específicas das regras de negócio (uma por violação relevante). |
-| `helpdesk/modelos.py` | Classes de domínio: hierarquia de usuários, `Chamado`, `RegistroAtendimento`, `Estoque`, `Equipamento`, `MovimentacaoEstoque`. |
+| `helpdesk/usuarios.py` | Hierarquia de usuários: `Usuario` (abstrata), `UsuarioComum`, `Tecnico` e `Administrador`. |
+| `helpdesk/chamados.py` | `Chamado` e `RegistroAtendimento`. |
+| `helpdesk/estoque.py` | `Estoque`, `Equipamento` e `MovimentacaoEstoque`. |
 | `helpdesk/servicos.py` | Classe `HelpDesk`, que coordena os casos de uso e aplica as regras entre objetos. |
 | `main.py` | Script de demonstração: instancia objetos, executa cenários e exibe os resultados. |
 | `tests/` | Testes automatizados das regras de negócio (RN01 a RN06). |
+
+**Decisões de implementação que não foram detalhadas no diagrama**
+
+- **Primeiro administrador:** o `HelpDesk` é criado com `HelpDesk(nome_empresa, admin_inicial)`. O administrador é instanciado fora e incluído no cadastro (agregação), garantindo desde o início a RN06 (sempre existe ao menos um administrador ativo).
+- **Identificador dos usuários:** é gerado automaticamente por um contador da classe `Usuario` e é atribuído somente depois que nome, e-mail e senha forem validados.
+- **Validações:** nome e especialidade não podem ser vazios, o e-mail precisa ter formato válido (é armazenado em minúsculas e não pode se repetir no sistema) e a senha deve ter pelo menos 4 caracteres.
+- **Desativação de administrador:** é feita por meio do bloqueio (`bloquear()`), e o mesmo limite da RN06 vale para `alterar_bloqueio()`.
+- **Métodos privados auxiliares no `HelpDesk`:** `__verificar_permissao()`, que exige que o usuário esteja cadastrado, ativo e tenha a permissão da operação, e `__verificar_cadastro()`, que impede operar sobre usuários fora do sistema.
+- **`__str__` em `Usuario`:** exibe id, nome, e-mail, perfil e situação, para facilitar a saída no console.
 
 Na Parte 3, a interface em Tkinter será uma camada separada que apenas chama métodos de `HelpDesk`. Nenhuma regra de negócio ficará no código da interface.
 
@@ -212,11 +224,12 @@ python -m unittest discover -s tests -v
 - [x] Diagrama de casos de uso
 - [x] Diagrama de classes
 - [x] Relatório de justificativa teórica (formato SBC)
-- [ ] Enumerações e exceções
-- [ ] Hierarquia de usuários (classe abstrata, subclasses, `@property`)
+- [x] Enumerações e exceções
+- [x] Hierarquia de usuários (classe abstrata, subclasses, `@property`)
 - [ ] `Chamado` e `RegistroAtendimento`
 - [ ] `Estoque`, `Equipamento` e `MovimentacaoEstoque`
-- [ ] Classe `HelpDesk` (serviços)
+- [x] Classe `HelpDesk`: cadastro e administração de usuários (RN05 e RN06)
+- [ ] Classe `HelpDesk`: chamados e estoque
 - [ ] Testes das regras RN01 a RN06
 - [ ] `main.py` de demonstração
 - [ ] Interface gráfica com Tkinter (Parte 3)
@@ -227,13 +240,16 @@ Estrutura-alvo ao final da Parte 2:
 
 ```
 .
+├── .gitignore
 ├── README.md
 ├── main.py
 ├── helpdesk/
 │   ├── __init__.py
 │   ├── enums.py
 │   ├── excecoes.py
-│   ├── modelos.py
+│   ├── usuarios.py
+│   ├── chamados.py
+│   ├── estoque.py
 │   └── servicos.py
 ├── tests/
 │   ├── __init__.py
