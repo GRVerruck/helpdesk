@@ -26,7 +26,7 @@ Trabalho do III Trimestre — Tema: *Sistema de Hierarquia de Usuários (Help De
 | 3 | Interface gráfica com Tkinter | 20/11/2026 | Planejada |
 | — | Apresentações (8 a 10 minutos por grupo) | 20/11 a 27/11/2026 | Planejada |
 
-> A Parte 2 está em andamento. Já foram implementados a base do pacote (enumerações e exceções), a hierarquia de usuários e a parte de usuários da classe `HelpDesk`. As seções de chamados, estoque, execução e testes ainda serão atualizadas conforme a implementação avançar.
+> A Parte 2 está em andamento. A base do pacote, os usuários, os chamados e os registros de atendimento estão implementados. Estoque, testes e `main.py` seguem pendentes.
 
 ## Sumário
 
@@ -116,10 +116,12 @@ As decisões de modelagem estão justificadas no relatório em formato SBC (LaTe
 |--------|-------|--------------------|
 | RN01 | Somente o solicitante pode cancelar o chamado, e apenas enquanto o status for `ABERTO`. | `Chamado.cancelar()` |
 | RN02 | Somente chamados `ABERTO` podem ser assumidos, e cada técnico pode ter no máximo 5 chamados `EM_ATENDIMENTO`. | `Tecnico.pode_assumir()` |
-| RN03 | Toda mudança de status gera um `RegistroAtendimento`; o chamado só passa a `RESOLVIDO` se existir um registro do tipo `SOLUCAO`. | `Chamado.registrar_atendimento()` |
+| RN03 | Toda mudança de status gera um `RegistroAtendimento`. Resolver exige uma `SOLUCAO` anterior ou registrada na mesma operação. | `Chamado.registrar_atendimento()` |
 | RN04 | A quantidade em estoque nunca fica negativa, e equipamento baixado não pode ser movimentado. | `Equipamento.registrar_saida()` |
 | RN05 | Técnico com chamados `EM_ATENDIMENTO` não pode ser excluído. | `HelpDesk.excluir_tecnico()` |
 | RN06 | O autocadastro cria apenas Usuário Comum; técnicos e administradores só são cadastrados por administradores, e deve existir sempre ao menos um administrador ativo. | `HelpDesk.desativar_administrador()` |
+
+Transições permitidas: `ABERTO → EM_ATENDIMENTO/CANCELADO`, `EM_ATENDIMENTO ↔ PENDENTE` e `EM_ATENDIMENTO/PENDENTE → RESOLVIDO`. Em atendimento ou pendente, também é possível registrar sem mudar o status. Pendentes não contam no limite de cinco; a retomada verifica o limite novamente.
 
 ## 5. Aplicação dos pilares da POO
 
@@ -179,6 +181,9 @@ O projeto utiliza **somente Python e a biblioteca padrão**, sem dependências e
 - **Desativação de administrador:** é feita por meio do bloqueio (`bloquear()`), e o mesmo limite da RN06 vale para `alterar_bloqueio()`.
 - **Métodos privados auxiliares no `HelpDesk`:** `__verificar_permissao()`, que exige que o usuário esteja cadastrado, ativo e tenha a permissão da operação, e `__verificar_cadastro()`, que impede operar sobre usuários fora do sistema.
 - **`__str__` em `Usuario`:** exibe id, nome, e-mail, perfil e situação, para facilitar a saída no console.
+- **Autor do registro:** usa `Usuario` para identificar o solicitante no cancelamento. Atendimentos técnicos exigem o técnico responsável e ativo. Essa alteração ainda precisa ser refletida no UML e no relatório.
+- **Atribuição:** `Tecnico.assumir_chamado()` chama `Chamado.atribuir_tecnico()`. Após validar, o chamado usa `_adicionar_chamado()` para atualizar a lista do técnico uma única vez.
+- **Histórico e encerramento:** atribuição e cancelamento geram observações automáticas. Resolver ou cancelar define a data de encerramento e impede novos registros.
 
 Na Parte 3, a interface em Tkinter será uma camada separada que apenas chama métodos de `HelpDesk`. Nenhuma regra de negócio ficará no código da interface.
 
@@ -226,10 +231,11 @@ python -m unittest discover -s tests -v
 - [x] Relatório de justificativa teórica (formato SBC)
 - [x] Enumerações e exceções
 - [x] Hierarquia de usuários (classe abstrata, subclasses, `@property`)
-- [ ] `Chamado` e `RegistroAtendimento`
+- [x] `Chamado` e `RegistroAtendimento`
 - [ ] `Estoque`, `Equipamento` e `MovimentacaoEstoque`
 - [x] Classe `HelpDesk`: cadastro e administração de usuários (RN05 e RN06)
-- [ ] Classe `HelpDesk`: chamados e estoque
+- [x] Classe `HelpDesk`: abertura e consulta de chamados
+- [ ] Classe `HelpDesk`: integração com estoque
 - [ ] Testes das regras RN01 a RN06
 - [ ] `main.py` de demonstração
 - [ ] Interface gráfica com Tkinter (Parte 3)
