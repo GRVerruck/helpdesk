@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 
 from helpdesk.enums import Permissao
-from helpdesk.excecoes import LimiteChamadosError, SenhaIncorretaError
+from helpdesk.excecoes import SenhaIncorretaError
 
 
 class Usuario(ABC):
@@ -171,11 +171,9 @@ class Tecnico(Usuario):
         return list(self.__chamados_atribuidos)
 
     def assumir_chamado(self, chamado) -> None:
-        if not self.pode_assumir():
-            raise LimiteChamadosError(
-                f"{self.nome} já possui {self.__limite_chamados} chamados em atendimento."
-            )
         chamado.atribuir_tecnico(self)
+
+    def _adicionar_chamado(self, chamado) -> None:
         self.__chamados_atribuidos.append(chamado)
 
     def registrar_atendimento(self, chamado, tipo, descricao: str, novo_status=None):
