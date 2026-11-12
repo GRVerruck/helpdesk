@@ -1,7 +1,10 @@
 from datetime import datetime
 
 from helpdesk.enums import Categoria, Prioridade, StatusChamado, TipoAtendimento
-from helpdesk.excecoes import ChamadoNaoAbertoError, LimiteChamadosError, PermissaoNegadaError
+from helpdesk.excecoes import (
+    CancelamentoNaoPermitidoError, ChamadoNaoAbertoError, LimiteChamadosError,
+    PermissaoNegadaError, SolucaoObrigatoriaError, TransicaoInvalidaError,
+)
 from helpdesk.usuarios import Tecnico, Usuario
 
 
@@ -119,19 +122,79 @@ class Chamado:
             raise PermissaoNegadaError("Somente um técnico ativo pode assumir o chamado.")
         if self.__status != StatusChamado.ABERTO:
             raise ChamadoNaoAbertoError("Somente chamados abertos podem ser assumidos.")
-        if not tecnico.pode_assumir():
-            raise LimiteChamadosError(
-                f"{tecnico.nome} já possui {tecnico.limite_chamados} chamados em atendimento."
-            )
-
-        registro = RegistroAtendimento(
+        self.registrar_atendimento(
             tecnico, TipoAtendimento.OBSERVACAO, "Chamado assumido pelo técnico.",
-            self.__status, StatusChamado.EM_ATENDIMENTO
+            StatusChamado.EM_ATENDIMENTO
         )
-        self.__responsavel = tecnico
-        self.__status = StatusChamado.EM_ATENDIMENTO
+
+    def registrar_atendimento(self, autor: Usuario, tipo: TipoAtendimento, descricao: str,
+                             novo_status: StatusChamado | None = None) -> RegistroAtendimento:
+        if not isinstance(autor, Usuario) or not autor.esta_ativo():
+            raise PermissaoNegadaError("Somente usuários ativos podem registrar atendimentos.")
+        if not isinstance(tipo, TipoAtendimento):
+            raise ValueError("O tipo de atendimento é inválido.")
+        if not isinstance(descricao, str) or not descricao.strip():
+            raise ValueError("A descrição não pode ser vazia.")
+        if novo_status is None:
+            novo_status = self.__status
+        if not isinstance(novo_status, StatusChamado):
+            raise ValueError("O status do chamado é inválido.")
+
+        if novo_status == StatusChamado.CANCELADO:
+            if autor is not self.__solicitante or self.__status != StatusChamado.ABERTO:
+                raise CancelamentoNaoPermitidoError(
+                    "Somente o solicitante pode cancelar um chamado ainda aberto."
+                )
+            if tipo != TipoAtendimento.OBSERVACAO:
+                raise PermissaoNegadaError("O cancelamento deve gerar uma observação.")
+        elif self.__status == StatusChamado.ABERTO:
+            if (not isinstance(autor, Tecnico) or novo_status != StatusChamado.EM_ATENDIMENTO
+                    or tipo != TipoAtendimento.OBSERVACAO):
+                raise PermissaoNegadaError("O chamado deve ser assumido por um técnico.")
+        elif not isinstance(autor, Tecnico) or autor is not self.__responsavel:
+            raise PermissaoNegadaError("Somente o técnico responsável pode registrar atendimentos.")
+
+        if not self.__validar_transicao(novo_status):
+            raise TransicaoInvalidaError("A mudança de status não é permitida.")
+        if novo_status == StatusChamado.EM_ATENDIMENTO and not self.esta_em_atendimento():
+            if not autor.pode_assumir():
+                raise LimiteChamadosError(
+                    f"{autor.nome} já possui {autor.limite_chamados} chamados em atendimento."
+                )
+        if novo_status == StatusChamado.RESOLVIDO:
+            if tipo != TipoAtendimento.SOLUCAO and not self.possui_solucao():
+                raise SolucaoObrigatoriaError("É necessário registrar uma solução para resolver o chamado.")
+
+        registro = RegistroAtendimento(autor, tipo, descricao.strip(), self.__status, novo_status)
+        if self.__status == StatusChamado.ABERTO and novo_status == StatusChamado.EM_ATENDIMENTO:
+            self.__responsavel = autor
+            autor._adicionar_chamado(self)
+        self.__status = novo_status
         self.__registros.append(registro)
-        tecnico._adicionar_chamado(self)
+        if novo_status in (StatusChamado.RESOLVIDO, StatusChamado.CANCELADO):
+            self.__data_encerramento = registro.data_hora
+        return registro
+
+    def cancelar(self, usuario: Usuario) -> None:
+        self.registrar_atendimento(
+            usuario, TipoAtendimento.OBSERVACAO, "Chamado cancelado pelo solicitante.",
+            StatusChamado.CANCELADO
+        )
+
+    def possui_solucao(self) -> bool:
+        for registro in self.__registros:
+            if registro.eh_solucao():
+                return True
+        return False
+
+    def __validar_transicao(self, novo_status: StatusChamado) -> bool:
+        if self.__status == StatusChamado.ABERTO:
+            return novo_status in (StatusChamado.EM_ATENDIMENTO, StatusChamado.CANCELADO)
+        if self.__status in (StatusChamado.EM_ATENDIMENTO, StatusChamado.PENDENTE):
+            return novo_status in (
+                StatusChamado.EM_ATENDIMENTO, StatusChamado.PENDENTE, StatusChamado.RESOLVIDO
+            )
+        return False
 
     def listar_historico(self) -> list[RegistroAtendimento]:
         return list(self.__registros)
