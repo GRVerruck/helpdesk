@@ -3,7 +3,7 @@ import unittest
 from helpdesk.enums import Categoria, Prioridade, StatusChamado, TipoAtendimento
 from helpdesk.excecoes import (
     CancelamentoNaoPermitidoError, ChamadoNaoAbertoError, LimiteChamadosError,
-    SolucaoObrigatoriaError,
+    PermissaoNegadaError, SolucaoObrigatoriaError,
 )
 from helpdesk.helpdesk import HelpDesk
 from helpdesk.usuarios import Administrador
@@ -106,6 +106,84 @@ class TestChamado(unittest.TestCase):
             )
         self.assertEqual(self.chamado.status, StatusChamado.EM_ATENDIMENTO)
         self.assertEqual(len(self.chamado.listar_historico()), 1)
+
+    def test_uc02_chamado_aberto_nasce_aberto_sem_responsavel(self):
+        """UC02: Chamado aberto nasce ABERTO, sem responsável e com id sequencial"""
+        segundo = self.helpdesk.abrir_chamado(
+            self.solicitante, "Mouse quebrado", "Mouse não funciona",
+            Categoria.HARDWARE, Prioridade.BAIXA
+        )
+        self.assertEqual(segundo.status, StatusChamado.ABERTO)
+        self.assertIs(segundo.solicitante, self.solicitante)
+        self.assertIsNone(segundo.responsavel)
+        self.assertEqual(segundo.id, self.chamado.id + 1)
+        self.assertIn(segundo, self.solicitante.listar_meus_chamados())
+
+    def test_uc02_recusar_abertura_por_quem_nao_e_usuario_comum(self):
+        """UC02: Técnico e administrador não abrem chamados"""
+        for perfil in (self.tecnico, self.admin):
+            with self.assertRaises(PermissaoNegadaError):
+                self.helpdesk.abrir_chamado(
+                    perfil, "Teste", "Descrição", Categoria.OUTROS, Prioridade.BAIXA
+                )
+        self.assertEqual(self.helpdesk.listar_chamados(self.admin), [self.chamado])
+
+    def test_uc02_recusar_chamado_com_titulo_ou_descricao_vazios(self):
+        """UC02: Chamado sem título ou sem descrição é recusado"""
+        with self.assertRaises(ValueError):
+            self.helpdesk.abrir_chamado(
+                self.solicitante, "  ", "Descrição", Categoria.REDE, Prioridade.ALTA
+            )
+        with self.assertRaises(ValueError):
+            self.helpdesk.abrir_chamado(
+                self.solicitante, "Título", "", Categoria.REDE, Prioridade.ALTA
+            )
+        self.assertEqual(self.helpdesk.listar_chamados(self.admin), [self.chamado])
+
+    def test_uc05_historico_lista_registros_em_ordem(self):
+        """UC05: Histórico do chamado lista os registros em ordem cronológica"""
+        self.tecnico.assumir_chamado(self.chamado)
+        self.tecnico.registrar_atendimento(
+            self.chamado, TipoAtendimento.OBSERVACAO, "Aguardando peça", StatusChamado.PENDENTE
+        )
+        historico = self.chamado.listar_historico()
+        self.assertEqual(
+            [registro.status_novo for registro in historico],
+            [StatusChamado.EM_ATENDIMENTO, StatusChamado.PENDENTE]
+        )
+        self.assertIn("Aguardando peça", historico[1].resumir())
+        self.assertIn(self.tecnico.nome, historico[1].resumir())
+
+    def test_uc05_historico_retornado_nao_altera_o_chamado(self):
+        """UC05: Alterar a lista de histórico retornada não altera o chamado"""
+        self.tecnico.assumir_chamado(self.chamado)
+        self.chamado.listar_historico().clear()
+        self.assertEqual(len(self.chamado.listar_historico()), 1)
+
+    def test_uc07_fila_lista_apenas_chamados_abertos(self):
+        """UC07: Fila de chamados contém apenas chamados ABERTO"""
+        segundo = self.helpdesk.abrir_chamado(
+            self.solicitante, "Mouse quebrado", "Mouse não funciona",
+            Categoria.HARDWARE, Prioridade.BAIXA
+        )
+        terceiro = self.helpdesk.abrir_chamado(
+            self.solicitante, "Teclado quebrado", "Teclado não funciona",
+            Categoria.HARDWARE, Prioridade.BAIXA
+        )
+        self.tecnico.assumir_chamado(self.chamado)
+        self.solicitante.cancelar_chamado(terceiro)
+        self.assertEqual(self.helpdesk.listar_fila(), [segundo])
+
+    def test_uc09_resolver_chamado_com_registro_de_solucao(self):
+        """UC09: Técnico responsável resolve o chamado com registro de SOLUCAO"""
+        self.tecnico.assumir_chamado(self.chamado)
+        self.tecnico.registrar_atendimento(
+            self.chamado, TipoAtendimento.SOLUCAO, "Cabo de rede trocado", StatusChamado.RESOLVIDO
+        )
+        self.assertEqual(self.chamado.status, StatusChamado.RESOLVIDO)
+        self.assertTrue(self.chamado.possui_solucao())
+        self.assertIsNotNone(self.chamado.data_encerramento)
+        self.assertEqual(self.tecnico.contar_em_atendimento(), 0)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 import unittest
 
-from helpdesk.enums import Categoria, Permissao, Prioridade
+from helpdesk.enums import Categoria, Permissao, Prioridade, StatusChamado, TipoAtendimento
 from helpdesk.excecoes import SenhaIncorretaError
 from helpdesk.helpdesk import HelpDesk
 from helpdesk.usuarios import Administrador
@@ -58,8 +58,8 @@ class TestUsuarios(unittest.TestCase):
         )
         self.assertEqual(self.helpdesk.listar_chamados(self.usuario), [meu_chamado])
 
-    def test_uc23_tecnico_e_administrador_veem_todos_os_chamados(self):
-        """UC23: Técnico e administrador visualizam os chamados de todos"""
+    def test_uc23_administrador_ve_todos_os_chamados(self):
+        """UC23: Administrador visualiza os chamados de todos"""
         outro = self.helpdesk.cadastrar_usuario_comum(
             "Outro", "outro@empresa.com", "1234", "Compras"
         )
@@ -67,11 +67,46 @@ class TestUsuarios(unittest.TestCase):
             self.usuario, "Sem rede", "Computador sem acesso à rede",
             Categoria.REDE, Prioridade.ALTA
         )
-        self.helpdesk.abrir_chamado(
+        cancelado = self.helpdesk.abrir_chamado(
             outro, "Mouse quebrado", "Mouse não funciona", Categoria.HARDWARE, Prioridade.BAIXA
         )
-        self.assertEqual(len(self.helpdesk.listar_chamados(self.tecnico)), 2)
+        outro.cancelar_chamado(cancelado)
         self.assertEqual(len(self.helpdesk.listar_chamados(self.admin)), 2)
+
+    def test_uc23_tecnico_nao_ve_chamados_encerrados_de_outros(self):
+        """UC23: Técnico não consulta os chamados da empresa, só a fila e os que atende"""
+        outro = self.helpdesk.cadastrar_usuario_comum(
+            "Outro", "outro@empresa.com", "1234", "Compras"
+        )
+        segundo_tecnico = self.helpdesk.cadastrar_tecnico(
+            self.admin, "Segundo Tecnico", "segundo.tecnico@empresa.com", "1234", "Hardware"
+        )
+        cancelado = self.helpdesk.abrir_chamado(
+            outro, "Mouse quebrado", "Mouse não funciona", Categoria.HARDWARE, Prioridade.BAIXA
+        )
+        outro.cancelar_chamado(cancelado)
+        resolvido = self.helpdesk.abrir_chamado(
+            self.usuario, "Sem rede", "Computador sem acesso à rede",
+            Categoria.REDE, Prioridade.ALTA
+        )
+        segundo_tecnico.assumir_chamado(resolvido)
+        segundo_tecnico.registrar_atendimento(
+            resolvido, TipoAtendimento.SOLUCAO, "Cabo de rede trocado", StatusChamado.RESOLVIDO
+        )
+        aberto = self.helpdesk.abrir_chamado(
+            self.usuario, "Teclado quebrado", "Teclado não funciona",
+            Categoria.HARDWARE, Prioridade.BAIXA
+        )
+        self.assertEqual(self.helpdesk.listar_chamados(self.tecnico), [aberto])
+
+    def test_uc23_tecnico_ve_os_chamados_que_atende(self):
+        """UC23: Técnico continua vendo os chamados que ele atende"""
+        chamado = self.helpdesk.abrir_chamado(
+            self.usuario, "Sem rede", "Computador sem acesso à rede",
+            Categoria.REDE, Prioridade.ALTA
+        )
+        self.tecnico.assumir_chamado(chamado)
+        self.assertIn(chamado, self.helpdesk.listar_chamados(self.tecnico))
 
     def test_senha_recusar_alteracao_com_senha_atual_incorreta(self):
         """Senha: Senha atual incorreta impede a alteração"""

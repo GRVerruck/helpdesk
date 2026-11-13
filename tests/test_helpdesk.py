@@ -2,7 +2,7 @@ import unittest
 
 from helpdesk.enums import Categoria, Prioridade
 from helpdesk.excecoes import (
-    PermissaoNegadaError, TecnicoComChamadosError, UltimoAdministradorError,
+    EmailEmUsoError, PermissaoNegadaError, TecnicoComChamadosError, UltimoAdministradorError,
 )
 from helpdesk.helpdesk import HelpDesk
 from helpdesk.usuarios import Administrador, Tecnico, UsuarioComum
@@ -61,6 +61,79 @@ class TestHelpDesk(unittest.TestCase):
         with self.assertRaises(UltimoAdministradorError):
             self.helpdesk.desativar_administrador(self.admin, self.admin)
         self.assertTrue(self.admin.esta_ativo())
+
+    def test_uc17_administrador_cadastra_tecnico(self):
+        """UC17: Administrador cadastra técnico"""
+        novo = self.helpdesk.cadastrar_tecnico(
+            self.admin, "Novo Tecnico", "novo.tecnico@empresa.com", "1234", "Hardware"
+        )
+        self.assertIsInstance(novo, Tecnico)
+        self.assertIn(novo, self.helpdesk.listar_tecnicos())
+
+    def test_uc17_recusar_email_ja_cadastrado(self):
+        """UC17: E-mail já cadastrado é recusado"""
+        with self.assertRaises(EmailEmUsoError):
+            self.helpdesk.cadastrar_tecnico(
+                self.admin, "Copia", "TECNICO@empresa.com", "1234", "Redes"
+            )
+        self.assertEqual(self.helpdesk.listar_tecnicos(), [self.tecnico])
+
+    def test_uc18_consultar_tecnicos_lista_somente_tecnicos(self):
+        """UC18: Consulta de técnicos lista somente técnicos"""
+        segundo = self.helpdesk.cadastrar_tecnico(
+            self.admin, "Segundo Tecnico", "segundo.tecnico@empresa.com", "1234", "Hardware"
+        )
+        self.assertEqual(self.helpdesk.listar_tecnicos(), [self.tecnico, segundo])
+
+    def test_uc19_atualizar_nome_e_especialidade_do_tecnico(self):
+        """UC19: Administrador atualiza nome e especialidade do técnico"""
+        self.helpdesk.atualizar_tecnico(self.admin, self.tecnico, "Tecnico Senior", "Servidores")
+        self.assertEqual(self.tecnico.nome, "Tecnico Senior")
+        self.assertEqual(self.tecnico.especialidade, "Servidores")
+
+    def test_uc19_recusar_atualizacao_por_nao_administrador(self):
+        """UC19: Usuário que não é administrador não atualiza técnico"""
+        with self.assertRaises(PermissaoNegadaError):
+            self.helpdesk.atualizar_tecnico(self.usuario, self.tecnico, "Outro Nome", "Servidores")
+        self.assertEqual(self.tecnico.nome, "Tecnico")
+        self.assertEqual(self.tecnico.especialidade, "Redes")
+
+    def test_uc22_administrador_cadastra_outro_administrador(self):
+        """UC22: Administrador cadastra outro administrador"""
+        novo = self.helpdesk.cadastrar_administrador(
+            self.admin, "Segundo", "segundo@empresa.com", "1234", "Coordenador"
+        )
+        self.assertIsInstance(novo, Administrador)
+        self.assertIn(novo, self.helpdesk.usuarios)
+
+    def test_uc22_recusar_cadastro_de_administrador_por_nao_administrador(self):
+        """UC22: Usuário que não é administrador não cadastra administrador"""
+        total = len(self.helpdesk.usuarios)
+        with self.assertRaises(PermissaoNegadaError):
+            self.helpdesk.cadastrar_administrador(
+                self.usuario, "Intruso", "intruso@empresa.com", "1234", "Diretor"
+            )
+        self.assertEqual(len(self.helpdesk.usuarios), total)
+
+    def test_uc24_resumir_atividades_dos_tecnicos(self):
+        """UC24: Resumo mostra quantos chamados cada técnico atende"""
+        self.helpdesk.cadastrar_tecnico(
+            self.admin, "Segundo Tecnico", "segundo.tecnico@empresa.com", "1234", "Hardware"
+        )
+        for numero in range(2):
+            chamado = self.helpdesk.abrir_chamado(
+                self.usuario, f"Chamado {numero}", "Descrição", Categoria.SOFTWARE, Prioridade.BAIXA
+            )
+            self.tecnico.assumir_chamado(chamado)
+        resumo = self.helpdesk.resumir_atividades(self.admin)
+        self.assertEqual(resumo, {"Tecnico": 2, "Segundo Tecnico": 0})
+
+    def test_uc24_recusar_resumo_por_quem_nao_e_administrador(self):
+        """UC24: Somente o administrador acompanha atividades dos técnicos"""
+        for perfil in (self.usuario, self.tecnico):
+            with self.assertRaises(PermissaoNegadaError):
+                self.helpdesk.resumir_atividades(perfil)
+        self.assertEqual(self.helpdesk.resumir_atividades(self.admin), {"Tecnico": 0})
 
 
 if __name__ == "__main__":
