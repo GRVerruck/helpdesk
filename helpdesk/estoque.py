@@ -1,12 +1,15 @@
 from .excecoes import EstoqueInsuficienteError, EquipamentoBaixadoError
+from datetime import datetime
 
 
 class MovimentacaoEstoque:
-  def __init__(self,quantidade,motivo,responsavel,chamado = None):
+  def __init__(self,quantidade,motivo,responsavel,chamado = None, ):
     self.__quantidade = quantidade
     self.__motivo = motivo
     self.__responsavel = responsavel
     self.__chamado = chamado
+    self.__data_hora = datetime.now()
+
   @property
   def quantidade(self):
     return self.__quantidade
@@ -19,6 +22,9 @@ class MovimentacaoEstoque:
   @property
   def chamado(self):
     return self.__chamado
+  @property
+  def data_hora(self):
+     return self.__data_hora
 
   def descrever(self):
     return (
@@ -47,23 +53,18 @@ class Equipamento:
   @property
   def codigo(self):
         return self.__codigo
-
   @property
   def descricao(self):
         return self.__descricao
-
   @property
   def tipo(self):
         return self.__tipo
-
   @property
   def quantidade(self):
         return self.__quantidade
-
   @property
   def quantidade_minima(self):
         return self.__quantidade_minima
-
   @property
   def ativo(self):
         return self.__ativo
