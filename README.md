@@ -169,7 +169,7 @@ O projeto utiliza **somente Python e a biblioteca padrão**, sem dependências e
 | `helpdesk/usuarios.py` | Hierarquia de usuários: `Usuario` (abstrata), `UsuarioComum`, `Tecnico` e `Administrador`. |
 | `helpdesk/chamados.py` | `Chamado` e `RegistroAtendimento`. |
 | `helpdesk/estoque.py` | `Estoque`, `Equipamento` e `MovimentacaoEstoque`. |
-| `helpdesk/servicos.py` | Classe `HelpDesk`, que coordena os casos de uso e aplica as regras entre objetos. |
+| `helpdesk/helpdesk.py` | Classe `HelpDesk`, que coordena os casos de uso e aplica as regras entre objetos. |
 | `main.py` | Script de demonstração: instancia objetos, executa cenários e exibe os resultados. |
 | `tests/` | Testes automatizados das regras de negócio (RN01 a RN06). |
 
@@ -235,7 +235,7 @@ python -m unittest discover -s tests -v
 - [ ] `Estoque`, `Equipamento` e `MovimentacaoEstoque`
 - [x] Classe `HelpDesk`: cadastro e administração de usuários (RN05 e RN06)
 - [x] Classe `HelpDesk`: abertura e consulta de chamados
-- [ ] Classe `HelpDesk`: integração com estoque
+- [x] Classe `HelpDesk`: integração com estoque
 - [ ] Testes das regras RN01 a RN06
 - [ ] `main.py` de demonstração
 - [ ] Interface gráfica com Tkinter (Parte 3)
@@ -256,7 +256,7 @@ Estrutura-alvo ao final da Parte 2:
 │   ├── usuarios.py
 │   ├── chamados.py
 │   ├── estoque.py
-│   └── servicos.py
+│   └── helpdesk.py
 ├── tests/
 │   ├── __init__.py
 │   ├── test_chamado.py
