@@ -149,7 +149,7 @@ class HelpDesk:
 
     # UC24
     def resumir_atividades(self, admin: Administrador) -> dict[str, int]:
-        self.__verificar_permissao(admin, Permissao.CONSULTAR_TODOS_CHAMADOS)
+        self.__verificar_permissao(admin, Permissao.ACESSAR_PAINEL_ADMIN)
         resumo = {}
         for tecnico in self.listar_tecnicos():
             resumo[tecnico.nome] = tecnico.contar_em_atendimento()

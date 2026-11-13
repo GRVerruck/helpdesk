@@ -2,7 +2,7 @@ import hashlib
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from helpdesk.enums import Permissao
+from helpdesk.enums import Permissao, StatusChamado
 from helpdesk.excecoes import SenhaIncorretaError
 
 
@@ -201,7 +201,7 @@ class Tecnico(Usuario):
         }
 
     def pode_visualizar(self, chamado) -> bool:
-        return True
+        return chamado.status == StatusChamado.ABERTO or chamado.responsavel is self
 
 
 class Administrador(Usuario):

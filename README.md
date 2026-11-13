@@ -209,20 +209,64 @@ python main.py
 
 ## 9. Testes
 
-Os testes utilizam o módulo `unittest` da biblioteca padrão e cobrem cada regra de negócio, tanto o caminho válido quanto a violação esperada.
+Os testes utilizam o módulo `unittest` da biblioteca padrão e cobrem cada regra de negócio, tanto o caminho válido quanto a violação esperada. São 53 testes, e cada um tem uma descrição de uma linha que aparece na saída.
+
+**Como executar** (a partir da raiz do repositório)
 
 ```bash
-python -m unittest discover -s tests -v
+python -m unittest discover -s tests -t . -v
 ```
 
-| Regra | Cenários previstos |
-|-------|--------------------|
-| RN01 | Cancelar com status `ABERTO` pelo solicitante; recusar por outro usuário; recusar com status diferente de `ABERTO`. |
-| RN02 | Assumir chamado `ABERTO`; recusar chamado em outro status; recusar o sexto chamado simultâneo. |
-| RN03 | Mudança de status gera registro; `RESOLVIDO` sem registro `SOLUCAO` é recusado. |
-| RN04 | Saída com quantidade suficiente; recusar saída que deixaria o estoque negativo; recusar movimentação de equipamento baixado. |
-| RN05 | Excluir técnico sem chamados em atendimento; recusar com chamados `EM_ATENDIMENTO`. |
-| RN06 | Autocadastro gera apenas Usuário Comum; recusar cadastro de técnico por não administrador; manter ao menos um administrador ativo. |
+O parâmetro `-t .` define a raiz do projeto para que o pacote `helpdesk` seja encontrado. Para rodar um arquivo isolado:
+
+```bash
+python -m unittest tests.test_chamado -v
+```
+
+### 9.1 Regras de negócio testadas
+
+| Regra | Cenários testados | Arquivo |
+|-------|-------------------|---------|
+| RN01 | Cancelar com status `ABERTO` pelo solicitante; recusar por outro usuário; recusar com status diferente de `ABERTO`. | `test_chamado.py` |
+| RN02 | Assumir chamado `ABERTO`; recusar chamado em outro status; recusar o sexto chamado simultâneo. | `test_chamado.py` |
+| RN03 | Mudança de status gera registro; `RESOLVIDO` sem registro `SOLUCAO` é recusado. | `test_chamado.py` |
+| RN04 | Saída com quantidade suficiente; recusar saída que deixaria o estoque negativo; recusar movimentação de equipamento baixado. | `test_estoque.py` |
+| RN05 | Excluir técnico sem chamados em atendimento; recusar com chamados `EM_ATENDIMENTO`. | `test_helpdesk.py` |
+| RN06 | Autocadastro gera apenas Usuário Comum; recusar cadastro de técnico por não administrador; manter ao menos um administrador ativo. | `test_helpdesk.py` |
+
+### 9.2 Casos de uso testados
+
+| Caso de uso | Onde é testado |
+|-------------|----------------|
+Os 24 casos de uso possuem ao menos um teste.
+
+| Caso de uso | Onde é testado |
+|-------------|----------------|
+| UC01 Cadastrar conta | RN06 (autocadastro) e validação de nome, e-mail e senha, em `test_helpdesk.py` e `test_usuarios.py` |
+| UC02 Abrir chamado | Estado inicial, permissão e validação dos dados, em `test_chamado.py` |
+| UC03 Consultar meus chamados | `test_usuarios.py` |
+| UC04 Cancelar chamado | RN01, em `test_chamado.py` |
+| UC05 Visualizar histórico do chamado | Ordem dos registros e proteção da lista retornada, em `test_chamado.py` |
+| UC06 Fazer login no aplicativo | `test_usuarios.py` (acesso por perfil e senha incorreta) |
+| UC07 Consultar fila de chamados | Fila só com chamados `ABERTO`, em `test_chamado.py` |
+| UC08 Assumir chamado | RN02, em `test_chamado.py` |
+| UC09 Atualizar status e UC10 Registrar atendimento | RN03 e resolução com `SOLUCAO`, em `test_chamado.py` |
+| UC11 Registrar saída de equipamento | RN04 em `Equipamento`; saída pelo `HelpDesk` com vínculo ao chamado e recusas, em `test_estoque.py` |
+| UC12 Cadastrar equipamento | Cadastro, código duplicado e permissão, em `test_estoque.py` |
+| UC13 Consultar estoque | Equipamentos ativos e abaixo do mínimo, e permissão, em `test_estoque.py` |
+| UC14 Atualizar equipamento | Dados e reposição, em `test_estoque.py` |
+| UC15 Dar baixa em equipamento | RN04 em `Equipamento`; baixa pelo `HelpDesk`, em `test_estoque.py` |
+| UC16 Fazer login no painel | `test_usuarios.py` |
+| UC17 Cadastrar técnico | Cadastro, e-mail duplicado e RN06, em `test_helpdesk.py` |
+| UC18 Consultar técnicos | `test_helpdesk.py` |
+| UC19 Atualizar técnico | Atualização e recusa por não administrador, em `test_helpdesk.py` |
+| UC20 Excluir técnico | RN05, em `test_helpdesk.py` |
+| UC21 Bloquear/desbloquear usuário | `test_usuarios.py` |
+| UC22 Gerenciar administradores | Cadastro e RN06 (último administrador ativo), em `test_helpdesk.py` |
+| UC23 Consultar chamados da empresa | `test_usuarios.py` |
+| UC24 Acompanhar atividades dos técnicos | Resumo por técnico e acesso restrito ao administrador, em `test_helpdesk.py` |
+
+**Além das regras e dos casos de uso acima**, `test_usuarios.py` cobre a alteração de senha (recusa com senha atual incorreta e troca efetiva).
 
 ## 10. Roadmap
 
@@ -236,7 +280,7 @@ python -m unittest discover -s tests -v
 - [x] Classe `HelpDesk`: cadastro e administração de usuários (RN05 e RN06)
 - [x] Classe `HelpDesk`: abertura e consulta de chamados
 - [x] Classe `HelpDesk`: integração com estoque
-- [ ] Testes das regras RN01 a RN06
+- [x] Testes das regras RN01 a RN06
 - [ ] `main.py` de demonstração
 - [ ] Interface gráfica com Tkinter (Parte 3)
 
