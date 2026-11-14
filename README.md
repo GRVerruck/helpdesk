@@ -333,3 +333,7 @@ Estrutura-alvo ao final da Parte 2:
 ---
 
 Projeto acadêmico desenvolvido para fins didáticos na disciplina de Programação Orientada a Objetos I, IFC — Campus Concórdia.
+
+## API para acesso em rede
+
+A API compartilha chamados em memória entre os clientes. Execução, rotas e configuração de servidor estão em [API.md](API.md). Inicie com `python servidor.py` após instalar `requirements.txt` e definir `ADMIN_SENHA`.
