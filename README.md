@@ -22,8 +22,8 @@ Trabalho do III Trimestre — Tema: *Sistema de Hierarquia de Usuários (Help De
 | Parte | Descrição | Prazo | Situação |
 |-------|-----------|-------|----------|
 | 1 | Modelagem e arquitetura conceitual (UML + relatório SBC) | 30/10/2026 | Concluída |
-| 2 | Implementação em Python e testes | 13/11/2026 | Em desenvolvimento |
-| 3 | Interface gráfica com Tkinter | 20/11/2026 | Planejada |
+| 2 | Implementação em Python e testes | 13/11/2026 | Concluída |
+| 3 | Interface gráfica com Tkinter | 20/11/2026 | Em desenvolvimento |
 | — | Apresentações (8 a 10 minutos por grupo) | 20/11 a 27/11/2026 | Planejada |
 
 > A Parte 2 está em andamento. A base do pacote, os usuários, os chamados e os registros de atendimento estão implementados. Estoque, testes e `main.py` seguem pendentes.
