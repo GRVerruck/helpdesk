@@ -1,0 +1,47 @@
+% ---------------------------------------------------------------------------
+% sbc-template.sty  —  VERSÃO LOCAL APROXIMADA (NÃO É O ARQUIVO OFICIAL DA SBC)
+%
+% O arquivo oficial do "SBC Conferences Template" não pôde ser baixado no
+% ambiente em que este relatório foi compilado. Este arquivo reproduz, de forma
+% aproximada, as especificações do modelo SBC (papel A4, margens superior 3,5 cm,
+% inferior 2,5 cm, laterais 3,0 cm; Times 12 pt; título 16 pt negrito
+% centralizado; seções 13 pt negrito; recuo de parágrafo de 1,27 cm) e define os
+% mesmos comandos do template oficial (\author, \inst, \address, \email,
+% \maketitle), para que o arquivo relatorio_helpdesk.tex compile tanto com esta
+% versão quanto com o sbc-template.sty oficial (ex.: projeto "SBC Conferences
+% Template" no Overleaf). Para a entrega final, substitua este arquivo pelo
+% oficial e recompile.
+% ---------------------------------------------------------------------------
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{sbc-template}[2026/10/23 versao local aproximada]
+
+\RequirePackage{times}
+\RequirePackage[a4paper,top=3.5cm,bottom=2.5cm,left=3cm,right=3cm,
+                headheight=0pt,headsep=0pt,footskip=1cm]{geometry}
+
+\pagestyle{empty}
+\setlength{\parindent}{1.27cm}
+\setlength{\parskip}{6pt}
+
+% --- autores e afiliação ---------------------------------------------------
+\newcommand{\inst}[1]{\unskip\textsuperscript{#1}}
+\newcommand{\email}[1]{\par{\small\ttfamily #1}}
+\def\@address{}
+\newcommand{\address}[1]{\gdef\@address{#1}}
+
+\renewcommand{\maketitle}{%
+  \begin{center}
+    {\fontsize{16}{20}\selectfont\bfseries \@title\par}
+    \vspace{12pt}
+    {\fontsize{12}{14}\selectfont\bfseries \@author\par}
+    \vspace{12pt}
+    {\fontsize{12}{14}\selectfont \@address\par}
+  \end{center}
+  \vspace{6pt}%
+}
+
+% --- títulos de seção --------------------------------------------------------
+\renewcommand{\section}{\@startsection{section}{1}{0pt}%
+  {12pt}{6pt}{\fontsize{13}{15}\selectfont\bfseries}}
+\renewcommand{\subsection}{\@startsection{subsection}{2}{0pt}%
+  {12pt}{6pt}{\fontsize{12}{14}\selectfont\bfseries}}
