@@ -1,0 +1,60 @@
+\documentclass[12pt]{article}
+
+\usepackage{sbc-template}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx,url,amssymb}
+% No Overleaf (template oficial) o babel em português está disponível.
+\IfFileExists{brazil.ldf}{\usepackage[brazil]{babel}}{}
+
+\sloppy
+\hyphenpenalty=10000
+\exhyphenpenalty=10000
+
+% Nomes de código em fonte monoespaçada, permitindo quebra de linha após "_"
+\newcommand{\brk}{\textunderscore\allowbreak}
+\newcommand{\cod}[1]{{\small\ttfamily\let\_\brk #1}}
+
+\title{Help Desk: Modelagem Orientada a Objetos\\de um Sistema de Chamados de TI}
+
+\author{Gabriel Verruck, Guilherme Bortoletti, Mateus Biega e Vinicius Begnini Felicio.}
+
+\address{Ciência da Computação -- Instituto Federal Catarinense (IFC), Campus Concórdia\\
+  Concórdia, SC -- Brasil}
+
+\begin{document}
+
+\maketitle
+
+\section{Introdução e escopo}
+
+O sistema proposto é uma solução interna de uma empresa para abrir e acompanhar chamados de suporte técnico e controlar o estoque de equipamentos de TI. São dois executáveis: o \textbf{Aplicativo Principal}, usado por usuários comuns e técnicos, e o \textbf{Painel Administrativo}, usado apenas por administradores. Como ambos usam os mesmos dados, há um único modelo de domínio: o que diferencia os aplicativos é a permissão exigida no login, e não classes duplicadas. Ficam fora do escopo envio de e-mails, integrações externas, controle de prazos (SLA) e banco de dados.
+
+\section{Casos de uso e regras de negócio}
+
+O diagrama possui três atores (Usuário Comum, Técnico de TI e Administrador) e 24 casos de uso, agrupados em dois pacotes dentro da fronteira do sistema. Há operações CRUD para chamados (o cancelamento é uma exclusão lógica que preserva o histórico), equipamentos (a exclusão é a baixa) e técnicos. Usamos \cod{«include»} apenas em UC09$\rightarrow$UC10, pois toda mudança de status obrigatoriamente registra um atendimento, e \cod{«extend»} em comportamentos opcionais: UC05 (visualizar histórico) estende as consultas UC03 e UC07, e UC11 (saída de equipamento) estende UC10 quando há troca de equipamento. As regras de negócio, com o método que as garante, são:
+
+\noindent\textbf{RN01} -- só o solicitante cancela o chamado, e apenas com status ABERTO (\cod{Chamado.cancelar()}).
+\textbf{RN02} -- só chamados ABERTO podem ser assumidos e cada técnico tem no máximo 5 em atendimento (\cod{Tecnico.pode\_assumir()}).
+\textbf{RN03} -- toda mudança de status gera um \cod{RegistroAtendimento}, e RESOLVIDO exige um registro do tipo SOLUCAO (\cod{Chamado.registrar\_atendimento()}).
+\textbf{RN04} -- a quantidade em estoque nunca fica negativa e equipamento baixado não é movimentado (\cod{Equipamento.registrar\_saida()}).
+\textbf{RN05} -- técnico com chamados em atendimento não pode ser excluído (\cod{HelpDesk.excluir\_tecnico()}).
+\textbf{RN06} -- o autocadastro cria só Usuário Comum; técnicos e administradores só são cadastrados por administradores, e sempre deve haver um administrador ativo (\cod{HelpDesk.desativar\_administrador()}).
+
+\section{Abstração e herança}
+
+A classe \cod{Usuario} é \textbf{abstrata} porque não existe um ``usuário genérico'' no sistema: toda pessoa é um Usuário Comum, um Técnico ou um Administrador. Ela concentra o que é comum aos três perfis (dados de acesso e métodos como \cod{autenticar()}) e declara três métodos abstratos, que em Python usarão o módulo \cod{abc} e \cod{@abstractmethod}: \cod{obter\_perfil()}, \cod{listar\_permissoes()} e \cod{pode\_visualizar()}. As subclasses concretas \cod{UsuarioComum}, \cod{Tecnico} e \cod{Administrador} acrescentam apenas o que é próprio de cada perfil (setor, especialidade e limite de chamados, cargo). Os tipos de registro e de movimentação foram modelados como enumerações, e não como subclasses, pois mudam só os dados e não o comportamento, evitando uma herança artificial.
+
+\section{Encapsulamento}
+
+Os atributos usam a notação de visibilidade UML, que será mapeada para Python: \cod{-} (privado, \cod{\_\_atributo}), \cod{\#} (protegido, \cod{\_atributo}) e \cod{+} (público). Dados com regra, como \cod{senha\_hash}, \cod{status} e \cod{quantidade}, são privados e só mudam por métodos que validam as regras; por exemplo, o status de um chamado só é alterado por \cod{registrar\_atendimento()}, que usa o método privado \cod{validar\_transicao()}. Membros usados pelas subclasses, como \cod{nome} e \cod{validar\_email()}, são protegidos. \textit{Getters} e \textit{setters} foram omitidos do diagrama e serão implementados com \cod{@property}.
+
+\section{Polimorfismo}
+
+As três subclasses sobrescrevem os métodos abstratos. O método \cod{possui\_permissao()} de \cod{Usuario} chama \cod{listar\_permissoes()}, que retorna um conjunto diferente em cada subclasse. Com isso, \cod{HelpDesk.autenticar()} verifica a permissão exigida por cada aplicativo (Principal ou Painel) sem testar o tipo do objeto, o que também garante a RN06. Já \cod{pode\_visualizar(chamado)} retorna verdadeiro para técnicos e administradores, mas, no Usuário Comum, só se ele for o solicitante; assim \cod{HelpDesk.listar\_chamados()} atende todos os perfis com o mesmo código.
+
+\section{Agregação, composição e associações}
+
+Consideramos que o mínimo de cinco relações vale apenas para relações todo-parte (associações e heranças não foram contadas); o modelo possui seis. As \textbf{composições} indicam dependência de ciclo de vida, pois a parte é criada pelo todo e não existe fora dele: \cod{HelpDesk} \cod{Chamado} (chamados são criados apenas por \cod{abrir\_chamado()}), \cod{HelpDesk} \cod{Estoque} (o estoque nasce junto com o sistema), \cod{Chamado} \cod{RegistroAtendimento} (histórico do chamado) e \cod{Equipamento} \cod{MovimentacaoEstoque} (gerada pelo próprio equipamento). As \textbf{agregações} representam partes que existem de forma independente: em \cod{HelpDesk} \cod{Usuario}, o usuário é criado e depois incluído no cadastro, e um técnico excluído continua referenciado nos registros antigos; em \cod{Estoque} \cod{Equipamento}, o equipamento é um bem físico criado fora do estoque e apenas adicionado a ele. As demais ligações (\textit{solicita}, \textit{atende}, \textit{autor}, \textit{responsável} e \textit{referencia}) são \textbf{associações}, pois não há relação todo-parte; \textit{atende} é 0..1 porque um chamado aberto ainda não tem responsável.
+
+\end{document}
