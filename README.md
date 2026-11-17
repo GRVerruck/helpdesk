@@ -171,6 +171,11 @@ O projeto utiliza **somente Python e a biblioteca padrão**, sem dependências e
 | `helpdesk/estoque.py` | `Estoque`, `Equipamento` e `MovimentacaoEstoque`. |
 | `helpdesk/helpdesk.py` | Classe `HelpDesk`, que coordena os casos de uso e aplica as regras entre objetos. |
 | `main.py` | Script de demonstração: instancia objetos, executa cenários e exibe os resultados. |
+| `aplicacao.py` | Ponto de entrada da interface gráfica (Tkinter): cria o `HelpDesk` com dados de exemplo e alterna entre as telas. |
+| `telas/componentes.py` | Estilo visual (cores do IF) e peças reutilizadas pelas telas: campos, tabela e janela de formulário. |
+| `telas/login.py` | Tela de login, com escolha entre Aplicativo Principal e Painel Administrativo, e acesso ao autocadastro. |
+| `telas/painel.py` | Painel exibido após o login, com abas de acordo com as permissões do usuário. |
+| `telas/usuarios.py` | Telas de usuários: cadastro, edição de técnico, alteração de senha, "Minha conta" e gestão de usuários pelo administrador. |
 | `tests/` | Testes automatizados das regras de negócio (RN01 a RN06). |
 
 **Decisões de implementação que não foram detalhadas no diagrama**
@@ -185,7 +190,7 @@ O projeto utiliza **somente Python e a biblioteca padrão**, sem dependências e
 - **Atribuição:** `Tecnico.assumir_chamado()` chama `Chamado.atribuir_tecnico()`. Após validar, o chamado usa `_adicionar_chamado()` para atualizar a lista do técnico uma única vez.
 - **Histórico e encerramento:** atribuição e cancelamento geram observações automáticas. Resolver ou cancelar define a data de encerramento e impede novos registros.
 
-Na Parte 3, a interface em Tkinter será uma camada separada que apenas chama métodos de `HelpDesk`. Nenhuma regra de negócio ficará no código da interface.
+Na Parte 3, a interface em Tkinter é uma camada separada (`aplicacao.py` e pasta `telas/`) que apenas chama métodos de `HelpDesk` e dos usuários. Nenhuma regra de negócio fica no código da interface: ela só confere se os campos foram preenchidos e se a confirmação de senha é igual à senha. As demais validações (formato do e-mail, tamanho da senha, e-mail repetido, RN05 e RN06) vêm das classes do modelo, e a interface mostra a mensagem da exceção ao usuário.
 
 ## 8. Requisitos e execução
 
@@ -206,6 +211,20 @@ cd helpdesk
 ```bash
 python main.py
 ```
+
+**Execução da interface gráfica** *(Parte 3, em desenvolvimento)*
+
+```bash
+python aplicacao.py
+```
+
+A interface começa com estas contas de exemplo, criadas em `criar_sistema()` no `aplicacao.py`. Os dados ficam em memória e são perdidos ao fechar o programa.
+
+| Perfil | Área de acesso | E-mail | Senha |
+|--------|----------------|--------|-------|
+| Administrador | Painel Administrativo | `admin@empresa.com` | `admin123` |
+| Técnico de TI | Aplicativo Principal | `carlos@empresa.com` | `tec123` |
+| Usuário Comum | Aplicativo Principal | `joao@empresa.com` | `1234` |
 
 ## 9. Testes
 
@@ -282,7 +301,8 @@ Os 24 casos de uso possuem ao menos um teste.
 - [x] Classe `HelpDesk`: integração com estoque
 - [x] Testes das regras RN01 a RN06
 - [ ] `main.py` de demonstração
-- [ ] Interface gráfica com Tkinter (Parte 3)
+- [x] Interface gráfica: login, autocadastro e gestão de usuários (Parte 3)
+- [ ] Interface gráfica: chamados e estoque (Parte 3)
 
 ## 11. Estrutura do repositório
 
@@ -293,6 +313,13 @@ Estrutura-alvo ao final da Parte 2:
 ├── .gitignore
 ├── README.md
 ├── main.py
+├── aplicacao.py
+├── telas/
+│   ├── __init__.py
+│   ├── componentes.py
+│   ├── login.py
+│   ├── painel.py
+│   └── usuarios.py
 ├── helpdesk/
 │   ├── __init__.py
 │   ├── enums.py
