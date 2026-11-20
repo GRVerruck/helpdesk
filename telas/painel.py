@@ -1,6 +1,7 @@
 from tkinter import ttk
 
 from helpdesk.enums import Permissao
+from telas.chamados import TelaChamados
 from telas.usuarios import MinhaConta, TelaUsuarios
 
 
@@ -22,6 +23,7 @@ class TelaPainel(ttk.Frame):
 
         self.abas = ttk.Notebook(self)
         self.abas.pack(fill="both", expand=True, padx=16, pady=16)
+        self.abas.add(TelaChamados(self.abas, app), text="Chamados")
         if usuario.possui_permissao(Permissao.GERENCIAR_USUARIOS):
             self.abas.add(TelaUsuarios(self.abas, app), text="Usuários")
         self.abas.add(MinhaConta(self.abas, app), text="Minha conta")
