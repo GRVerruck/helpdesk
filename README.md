@@ -26,7 +26,7 @@ Trabalho do III Trimestre — Tema: *Sistema de Hierarquia de Usuários (Help De
 | 3 | Interface gráfica com Tkinter | 20/11/2026 | Em desenvolvimento |
 | — | Apresentações (8 a 10 minutos por grupo) | 20/11 a 27/11/2026 | Planejada |
 
-> A Parte 2 está em andamento. A base do pacote, os usuários, os chamados e os registros de atendimento estão implementados. Estoque, testes e `main.py` seguem pendentes.
+> A Parte 2 (modelo, testes e `main.py`) está concluída. Na Parte 3, as telas de login, usuários, chamados e estoque estão implementadas em Tkinter.
 
 ## Sumário
 
@@ -175,6 +175,8 @@ O projeto utiliza **somente Python e a biblioteca padrão**, sem dependências e
 | `telas/componentes.py` | Estilo visual (cores do IF) e peças reutilizadas pelas telas: campos, tabela e janela de formulário. |
 | `telas/login.py` | Tela de login, com escolha entre Aplicativo Principal e Painel Administrativo, e acesso ao autocadastro. |
 | `telas/painel.py` | Painel exibido após o login, com abas de acordo com as permissões do usuário. |
+| `telas/chamados.py` | Telas de chamados: listagem com busca e filtros, abertura, detalhe, histórico e registro de atendimento. |
+| `telas/estoque.py` | Telas de estoque, exclusivas do Técnico: listagem com busca e filtro de situação, cadastro de equipamento e detalhe com histórico, reposição, saída vinculada a chamado, edição e baixa. |
 | `telas/usuarios.py` | Telas de usuários: cadastro, edição de técnico, alteração de senha, "Minha conta" e gestão de usuários pelo administrador. |
 | `tests/` | Testes automatizados das regras de negócio (RN01 a RN06). |
 
@@ -188,6 +190,8 @@ O projeto utiliza **somente Python e a biblioteca padrão**, sem dependências e
 - **`__str__` em `Usuario`:** exibe id, nome, e-mail, perfil e situação, para facilitar a saída no console.
 - **Autor do registro:** usa `Usuario` para identificar o solicitante no cancelamento. Atendimentos técnicos exigem o técnico responsável e ativo. Essa alteração ainda precisa ser refletida no UML e no relatório.
 - **Atribuição:** `Tecnico.assumir_chamado()` chama `Chamado.atribuir_tecnico()`. Após validar, o chamado usa `_adicionar_chamado()` para atualizar a lista do técnico uma única vez.
+- **Movimentação de estoque:** `MovimentacaoEstoque` guarda quantidade, motivo, responsável e chamado. O tipo (`TipoMovimentacao`) e a data e hora previstos no diagrama de classes ainda não foram implementados, e por isso o histórico da tela não distingue entrada, saída e baixa.
+- **Baixa de equipamento:** `dar_baixa()` desativa o equipamento (`ativo = False`) sem apagá-lo e registra uma movimentação com a quantidade do momento. A quantidade não é zerada, e o equipamento baixado não aceita mais reposição nem saída.
 - **Histórico e encerramento:** atribuição e cancelamento geram observações automáticas. Resolver ou cancelar define a data de encerramento e impede novos registros.
 
 Na Parte 3, a interface em Tkinter é uma camada separada (`aplicacao.py` e pasta `telas/`) que apenas chama métodos de `HelpDesk` e dos usuários. Nenhuma regra de negócio fica no código da interface: ela só confere se os campos foram preenchidos e se a confirmação de senha é igual à senha. As demais validações (formato do e-mail, tamanho da senha, e-mail repetido, RN05 e RN06) vêm das classes do modelo, e a interface mostra a mensagem da exceção ao usuário.
@@ -197,7 +201,7 @@ Na Parte 3, a interface em Tkinter é uma camada separada (`aplicacao.py` e past
 **Requisitos**
 
 - Python 3.10 ou superior
-- Nenhuma biblioteca externa (Tkinter acompanha a instalação padrão do Python e só será necessário na Parte 3)
+- Nenhuma biblioteca externa. O Tkinter só é necessário para a interface gráfica (Parte 3) e acompanha a instalação padrão do Python na maioria dos sistemas. No FreeBSD ele é um pacote separado: `pkg install py312-tkinter` (ajuste o número para a versão do Python instalada)
 
 **Obtenção do código**
 
@@ -206,7 +210,7 @@ git clone git@github.com:GRVerruck/helpdesk.git
 cd helpdesk
 ```
 
-**Execução da demonstração** *(disponível após a implementação da Parte 2)*
+**Execução da demonstração**
 
 ```bash
 python main.py
@@ -228,7 +232,7 @@ A interface começa com estas contas de exemplo, criadas em `criar_sistema()` no
 
 ## 9. Testes
 
-Os testes utilizam o módulo `unittest` da biblioteca padrão e cobrem cada regra de negócio, tanto o caminho válido quanto a violação esperada. São 53 testes, e cada um tem uma descrição de uma linha que aparece na saída.
+Os testes utilizam o módulo `unittest` da biblioteca padrão e cobrem cada regra de negócio, tanto o caminho válido quanto a violação esperada. São 55 testes, e cada um tem uma descrição de uma linha que aparece na saída.
 
 **Como executar** (a partir da raiz do repositório)
 
@@ -295,18 +299,19 @@ Os 24 casos de uso possuem ao menos um teste.
 - [x] Enumerações e exceções
 - [x] Hierarquia de usuários (classe abstrata, subclasses, `@property`)
 - [x] `Chamado` e `RegistroAtendimento`
-- [ ] `Estoque`, `Equipamento` e `MovimentacaoEstoque`
+- [x] `Estoque`, `Equipamento` e `MovimentacaoEstoque`
 - [x] Classe `HelpDesk`: cadastro e administração de usuários (RN05 e RN06)
 - [x] Classe `HelpDesk`: abertura e consulta de chamados
 - [x] Classe `HelpDesk`: integração com estoque
 - [x] Testes das regras RN01 a RN06
-- [ ] `main.py` de demonstração
+- [x] `main.py` de demonstração
 - [x] Interface gráfica: login, autocadastro e gestão de usuários (Parte 3)
-- [ ] Interface gráfica: chamados e estoque (Parte 3)
+- [x] Interface gráfica: chamados (Parte 3)
+- [x] Interface gráfica: estoque (Parte 3)
 
 ## 11. Estrutura do repositório
 
-Estrutura-alvo ao final da Parte 2:
+Estrutura do repositório:
 
 ```
 .
@@ -316,7 +321,9 @@ Estrutura-alvo ao final da Parte 2:
 ├── aplicacao.py
 ├── telas/
 │   ├── __init__.py
+│   ├── chamados.py
 │   ├── componentes.py
+│   ├── estoque.py
 │   ├── login.py
 │   ├── painel.py
 │   └── usuarios.py
