@@ -137,11 +137,3 @@ class Estoque:
           equipamento for equipamento in self.__equipamentos.values()
           if equipamento.abaixo_do_minimo()
        ]
-
-
-      
-
-
- 
-
-

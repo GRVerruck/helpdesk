@@ -187,9 +187,7 @@ class TelaEstoque(ttk.Frame):
         self.app = app
         self.equipamentos = {}
 
-        topo = ttk.Frame(self)
-        topo.pack(fill="x")
-        ttk.Label(topo, text="Estoque", style="Subtitulo.TLabel").pack(side="left")
+        ttk.Label(self, text="Estoque", style="Subtitulo.TLabel").pack(anchor="w")
         ttk.Label(self, text="Controle os equipamentos de TI, as reposições, as saídas para chamados e as baixas.",
                   style="Discreto.TLabel").pack(anchor="w", pady=(4, 12))
 
@@ -231,13 +229,14 @@ class TelaEstoque(ttk.Frame):
             texto = f"{equipamento.codigo} {equipamento.descricao} {equipamento.tipo}".lower()
             if busca and busca not in texto:
                 continue
-            if situacao != "Todas as situações" and situacao_equipamento(equipamento) != situacao:
+            situacao_atual = situacao_equipamento(equipamento)
+            if situacao != "Todas as situações" and situacao_atual != situacao:
                 continue
             chave = str(equipamento.codigo)
             self.equipamentos[chave] = equipamento
             self.tabela.insert("", "end", iid=chave, tags=() if equipamento.ativo else ("bloqueado",), values=(
                 equipamento.codigo, equipamento.descricao, equipamento.tipo, equipamento.quantidade,
-                equipamento.quantidade_minima, situacao_equipamento(equipamento),
+                equipamento.quantidade_minima, situacao_atual,
             ))
 
     def adicionar_equipamento(self):
